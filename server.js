@@ -1,7 +1,7 @@
-//import express
+//import dependencies
+const { table } = require("console");
 const express = require("express");
 const inquirer = require("inquirer");
-//import mysql
 const mysql = require("mysql");
 //port designation
 const PORT = process.env.PORT || 3003;
@@ -47,29 +47,30 @@ function startServer() {
         case "View all employees":
           viewEmps();
           break;
-        //   let sql = `SELECT employee.id, employee.first_name, employee.last_name, roles.title, department.department_name, CONCAT(manager.first_name, ' ', manager.last_name) AS manager 
-        //   FROM employee 
-        //   LEFT JOIN manager ON employee.manager_id = manager.id
-        //   LEFT JOIN roles ON employee.role_id = roles.id 
-        //   LEFT JOIN department ON employee.department_id = department.id`;
-        //   db.query(sql, function (err, rows) {
-        //     if (err) throw err;
-        //     console.table(rows);
-        //     startServer();
-        //   });
+
+        case "View all departments":
+        viewByDept();
+        break;
       }
     });
 }
 
 const viewEmps = () => {
-  // switch (response.start) {
-  //   case "View all employees":
       db.query(empTable, function (err, rows) {
         if (err) throw err;
         console.table(rows);
         startServer();
       });
-  }
+  };
+
+const viewByDept = () => {
+  const deptQuery = `SELECT * FROM department`;
+  db.query(deptQuery, function (err, rows) {
+    if (err) throw err;
+    console.table(rows);
+    startServer();
+  })
+}
 
 
 
