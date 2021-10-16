@@ -69,8 +69,10 @@ const viewByDept = () => {
     if (err) throw err;
     console.table(rows);
     startServer();
-  })
-}
+  });
+};
+
+
 
 
 
