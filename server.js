@@ -49,8 +49,12 @@ function startServer() {
           break;
 
         case "View all departments":
-        viewByDept();
+        viewDept();
         break;
+
+        case "View all roles":
+          viewRoles();
+          break;
       }
     });
 }
@@ -63,7 +67,7 @@ const viewEmps = () => {
       });
   };
 
-const viewByDept = () => {
+const viewDept = () => {
   const deptQuery = `SELECT * FROM department`;
   db.query(deptQuery, function (err, rows) {
     if (err) throw err;
@@ -72,7 +76,14 @@ const viewByDept = () => {
   });
 };
 
-
+const viewRoles = () => {
+  const rolesQuery = `SELECT * FROM roles`;
+  db.query(rolesQuery, function (err, rows) {
+    if(err) throw err;
+    console.table(rows);
+    startServer();
+  })
+}
 
 
 
