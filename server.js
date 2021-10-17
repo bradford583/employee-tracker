@@ -1,5 +1,4 @@
 //import dependencies
-const { table } = require("console");
 const express = require("express");
 const inquirer = require("inquirer");
 const mysql = require("mysql");
@@ -12,6 +11,14 @@ const empTable = `SELECT employee.id, employee.first_name, employee.last_name, r
       LEFT JOIN manager ON employee.manager_id = manager.id
       LEFT JOIN roles ON employee.role_id = roles.id 
       LEFT JOIN department ON employee.department_id = department.id`;
+      
+const roleQuery = 'SELECT * from roles; SELECT CONCAT (e.first_name," ",e.last_name) AS full_name FROM employee e'
+const addEmployeeQuestions = [
+  "What is the first name?",
+  "What is the last name?",
+  "What is their role?",
+  "Who is their manager?",
+];
 
 // Express middleware
 app.use(express.urlencoded({ extended: false }));
@@ -40,6 +47,9 @@ function startServer() {
         "View all roles",
         "View all departments",
         "Add an employee",
+        "Add a department",
+        "Add a role",
+        "Update an employee",
       ],
     })
     .then(function (response) {
@@ -49,23 +59,39 @@ function startServer() {
           break;
 
         case "View all departments":
-        viewDept();
-        break;
+          viewDept();
+          break;
 
         case "View all roles":
           viewRoles();
+          break;
+
+        case "Add an employee":
+          addEmp();
+          break;
+
+        case "Add a department":
+          addDept();
+          break;
+
+        case "Add a role":
+          addRole();
+          break;
+
+        case "Update an employee":
+          updateEmp();
           break;
       }
     });
 }
 
 const viewEmps = () => {
-      db.query(empTable, function (err, rows) {
-        if (err) throw err;
-        console.table(rows);
-        startServer();
-      });
-  };
+  db.query(empTable, function (err, rows) {
+    if (err) throw err;
+    console.table(rows);
+    startServer();
+  });
+};
 
 const viewDept = () => {
   const deptQuery = `SELECT * FROM department`;
@@ -79,14 +105,58 @@ const viewDept = () => {
 const viewRoles = () => {
   const rolesQuery = `SELECT * FROM roles`;
   db.query(rolesQuery, function (err, rows) {
-    if(err) throw err;
+    if (err) throw err;
     console.table(rows);
     startServer();
+  });
+};
+
+const addEmp = () => {
+  db.query(roleQuery, (err, results) => {
+      if (err) throw err;
+
+      inquirer.prompt([
+          {
+              name: 'fName',
+              type: 'input',
+              message: addEmployeeQuestions[0]
+
+          },
+          {
+              name: 'lName',
+              type: 'input',
+              message: addEmployeeQuestions[1]
+          },
+          {
+              name: 'role',
+              type: 'list',
+              choices: function () {
+                  let choiceArray = results[0].map(choice => choice.title);
+                  return choiceArray;
+              },
+              message: addEmployeeQuestions[2]
+
+          },
+          {
+              name: 'manager',
+              type: 'list',
+              choices: function () {
+                  let choiceArray = results[1].map(choice => choice.full_name);
+                  return choiceArray;
+              },
+              message: addEmployeeQuestions[3]
+
+          }
+      ]).then((answer) => {
+            db.query(
+              `INSERT INTO employee(first_name, last_name, role_id, manager_id) VALUES(?, ?, 
+              (SELECT id FROM roles WHERE title = ? ), 
+              (SELECT id FROM (SELECT id FROM employee WHERE CONCAT(first_name," ",last_name) = ? ) AS tmptable))`, [answer.fName, answer.lName, answer.role, answer.manager]
+          )
+          startServer();
+      })
   })
 }
-
-
-
 
 //Default response for any other request (Not Found)
 app.use((req, res) => {
