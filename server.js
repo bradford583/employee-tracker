@@ -2,6 +2,7 @@
 const express = require("express");
 const inquirer = require("inquirer");
 const mysql = require("mysql");
+const { title } = require("process");
 //port designation
 const PORT = process.env.PORT || 3003;
 const app = express();
@@ -186,6 +187,51 @@ const addDept = () => {
       startServer();
     });
 };
+
+const addRole = () => {
+  let departArray = [];
+  db.query(`SELECT * FROM department`, function(err, results) {
+    if (err) throw err;
+    results.forEach(element => {
+      departArray.push(element.department_name)
+    });
+
+    inquirer.prompt([
+      {
+        name: "title",
+        type: "input",
+        message: "What is the name of this role?"
+      },
+      {
+        name: "salary",
+        type: "input",
+        message: "What is the salary of this role?"
+      },
+      {
+        name: "dept",
+        type: "list",
+        choices: departArray,
+        message: "What department is this role in?"
+      }
+    ])
+    .then(function(response) {
+      let sqlQuery = `SELECT id FROM department WHERE department_name = ?`;
+      db.query(sqlQuery, [response.dept], function(err, result) {
+        if (err) throw err;
+        console.log(result);
+        db.query(`INSERT INTO roles SET ?`, {
+          title: response.title,
+          salary: response.salary,
+          department_id: result[0].id
+        }, function (err, result) {
+          if (err) throw err;
+          startServer();
+        })
+      })
+      
+    })
+  })
+}
 
 
 //Default response for any other request (Not Found)
