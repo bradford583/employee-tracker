@@ -12,7 +12,7 @@ const empTable = `SELECT employee.id, employee.first_name, employee.last_name, r
       LEFT JOIN roles ON employee.role_id = roles.id 
       LEFT JOIN department ON employee.department_id = department.id`;
       
-const roleQuery = 'SELECT * from roles; SELECT CONCAT (e.first_name," ",e.last_name) AS full_name FROM employee e'
+const empQuery = 'SELECT CONCAT(e.first_name," ",e.last_name) AS full_name FROM employee AS e';
 const addEmployeeQuestions = [
   "What is the first name?",
   "What is the last name?",
@@ -111,11 +111,30 @@ const viewRoles = () => {
   });
 };
 
-const addEmp = () => {
-  db.query(roleQuery, (err, results) => {
-      if (err) throw err;
+const rolesQuery = (callback) => {
+  let sqlQuery = `SELECT * FROM roles`
+  db.query(sqlQuery,  function(err, results)  {
+    if (err) throw err;
+    let data = [];
+    results.forEach(element => {
+      data.push(element)
+    });;
+    callback(data);
+  })
+  //return results;
+};
 
-      inquirer.prompt([
+const managerQuery = () => {
+  let sqlQuery = `SELECT * FROM manager`
+  db.query(sqlQuery, (err, results) => {
+    //console.log(results);
+    return results;
+  });
+  //return results;
+};
+
+const addEmp = () => {
+        inquirer.prompt([
           {
               name: 'fName',
               type: 'input',
@@ -130,20 +149,16 @@ const addEmp = () => {
           {
               name: 'role',
               type: 'list',
-              choices: function () {
-                  let choiceArray = results[0].map(choice => choice.title);
-                  return choiceArray;
-              },
+              choices: rolesQuery(function (data){
+                return Object.values(data)
+              }),
               message: addEmployeeQuestions[2]
 
           },
           {
               name: 'manager',
               type: 'list',
-              choices: function () {
-                  let choiceArray = results[1].map(choice => choice.full_name);
-                  return choiceArray;
-              },
+              choices: managerQuery(),
               message: addEmployeeQuestions[3]
 
           }
@@ -155,8 +170,23 @@ const addEmp = () => {
           )
           startServer();
       })
-  })
-}
+  };
+
+const addDept = () => {
+  inquirer.prompt({
+      name: 'dept',
+      type: 'input',
+      message: 'What is the name of the department?'
+    }).then(function(response) {
+      let sqlQuery = `INSERT INTO department SET ?`;
+      db.query(sqlQuery, { department_name: response.dept }, (err, res) => {
+        if (err) throw err;
+        console.log('department added');
+      });
+      startServer();
+    });
+};
+
 
 //Default response for any other request (Not Found)
 app.use((req, res) => {
