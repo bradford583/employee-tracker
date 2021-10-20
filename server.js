@@ -13,14 +13,10 @@ const empTable = `SELECT employee.id, employee.first_name, employee.last_name, r
       LEFT JOIN manager ON employee.manager_id = manager.id
       LEFT JOIN roles ON employee.role_id = roles.id 
       LEFT JOIN department ON employee.department_id = department.id`;
-      
-const empQuery = 'SELECT CONCAT(e.first_name," ",e.last_name) AS full_name FROM employee AS e';
-const addEmployeeQuestions = [
-  "What is the first name?",
-  "What is the last name?",
-  "What is their role?",
-  "Who is their manager?",
-];
+
+const empQuery =
+  'SELECT CONCAT(e.first_name," ",e.last_name) AS full_name FROM employee AS e';
+
 
 // Express middleware
 app.use(express.urlencoded({ extended: false }));
@@ -32,7 +28,7 @@ const db = mysql.createConnection(
     // Your MySQL username,
     user: "root",
     // Your MySQL password
-    password: process.env.DB_PW,
+    password: "12161985Cb$",
     database: "store_employees",
   },
   console.log("Connected to the store_employees database.")
@@ -52,7 +48,7 @@ function startServer() {
         "Add a department",
         "Add a role",
         "Update an employee's role",
-        "Update an employee's manager"
+        "Update an employee's manager",
       ],
     })
     .then(function (response) {
@@ -118,78 +114,89 @@ const viewRoles = () => {
   });
 };
 
-const rolesQuery = (callback) => {
-  let sqlQuery = `SELECT * FROM roles`
-  db.query(sqlQuery,  function(err, rows)  {
-    if (err) throw err;
-    let data = [];
-    results.forEach(element => {
-      data.push(element)
-    });;
-    callback(data);
-  })
-  //return results;
-};
-
-const managerQuery = () => {
-  let sqlQuery = `SELECT * FROM manager`
-  db.query(sqlQuery, (err, results) => {
-    //console.log(results);
-    return results;
-  });
-  //return results;
-};
-
 const addEmp = () => {
-      
+  inquirer
+    .prompt([
+      {
+        name: "fName",
+        type: "input",
+        message: "What is the employees first name?",
+      },
+      {
+        name: "lName",
+        type: "input",
+        message: "What is the employees last name",
+      }
+    ])
+    .then(answer => {
+      const params = [answer.fName, answer.lName]
+
+      const roleSql = `SELECT roles.id, roles.title FROM roles`;
+      db.query(roleSql, (err, data) => {
+        if (err) throw err;
+        const role = data.map(({ id, title }) => ({ name: title, value: id }));
+
         inquirer.prompt([
           {
-              name: 'fName',
-              type: 'input',
-              message: addEmployeeQuestions[0]
-
-          },
-          {
-              name: 'lName',
-              type: 'input',
-              message: addEmployeeQuestions[1]
-          },
-          {
-              name: 'role',
-              type: 'list',
-              choices: rolesQuery(function (data){
-                return Object.values(data)
-              }),
-              message: addEmployeeQuestions[2]
-
-          },
-          {
-              name: 'manager',
-              type: 'list',
-              choices: managerQuery(),
-              message: addEmployeeQuestions[3]
-
+            name: 'role',
+            type: 'list',
+            message: 'What is the employees role?',
+            choices: role
           }
-      ]).then((answer) => {
-            db.query(
-              `INSERT INTO employee(first_name, last_name, role_id, manager_id) VALUES(?, ?, ?, ?)
-              (SELECT id FROM roles WHERE title = ? ), 
-              (SELECT id FROM (SELECT id FROM employee WHERE CONCAT(first_name," ",last_name) = ? ) AS tmptable))`, [answer.fName, answer.lName, answer.role, answer.manager]
-          )
-          startServer();
+        ])
+        .then(roleChoice => {
+          const role = roleChoice.role;
+          params.push(role);
+
+          const managerSql = `SELECT * FROM manager`;
+
+          db.query(managerSql, (err, data) => {
+            if (err) throw err;
+
+            const managers = data.map(({ id, first_name, last_name }) => ({ name: first_name + " "+ last_name, value: id}));
+
+            inquirer.prompt([
+              {
+                name: 'manager',
+                type: 'list',
+                message: 'Who is the employees manager?',
+                choices: managers
+              }
+            ])
+            .then(managerChoice => {
+              const manager = managerChoice.manager;
+              params.push(manager);
+
+              const sql = `INSERT INTO employee (first_name, last_name, role_id, manager_id)
+              VALUES (?, ?, ?, ?)`;
+
+              db.query(sql, params, (err, result) => {
+                if (err) throw err;
+                console.log("Employee has been added");
+
+                viewEmps();
+              })
+            })
+          })
+        })
       })
-  };
+      
+      startServer();
+    });
+};
 
 const addDept = () => {
-  inquirer.prompt({
-      name: 'dept',
-      type: 'input',
-      message: 'What is the name of the department?'
-    }).then(function(response) {
+  inquirer
+    .prompt({
+      name: "dept",
+      type: "input",
+      message: "What is the name of the department?",
+    })
+    .then(function (response) {
       let sqlQuery = `INSERT INTO department SET ?`;
       db.query(sqlQuery, { department_name: response.dept }, (err, rows) => {
         if (err) throw err;
-        console.table(rows);
+        viewDept();
       });
       startServer();
     });
@@ -197,96 +204,101 @@ const addDept = () => {
 
 const addRole = () => {
   let departArray = [];
-  db.query(`SELECT * FROM department`, function(err, rows) {
+  db.query(`SELECT * FROM department`, function (err, rows) {
     if (err) throw err;
-    results.forEach(element => {
-      departArray.push(element.department_name)
+    results.forEach((element) => {
+      departArray.push(element.department_name);
     });
 
-    inquirer.prompt([
-      {
-        name: "title",
-        type: "input",
-        message: "What is the name of this role?"
-      },
-      {
-        name: "salary",
-        type: "input",
-        message: "What is the salary of this role?"
-      },
-      {
-        name: "dept",
-        type: "list",
-        choices: departArray,
-        message: "What department is this role in?"
-      }
-    ])
-    .then(function(response) {
-      let sqlQuery = `SELECT id FROM department WHERE department_name = ?`;
-      db.query(sqlQuery, [response.dept], function(err, result) {
-        if (err) throw err;
-        console.log(result);
-        db.query(`INSERT INTO roles SET ?`, {
-          title: response.title,
-          salary: response.salary,
-          department_id: result[0].id
-        }, function (err, result) {
+    inquirer
+      .prompt([
+        {
+          name: "title",
+          type: "input",
+          message: "What is the name of this role?",
+        },
+        {
+          name: "salary",
+          type: "input",
+          message: "What is the salary of this role?",
+        },
+        {
+          name: "dept",
+          type: "list",
+          choices: departArray,
+          message: "What department is this role in?",
+        },
+      ])
+      .then(function (response) {
+        let sqlQuery = `SELECT id FROM department WHERE department_name = ?`;
+        db.query(sqlQuery, [response.dept], function (err, result) {
           if (err) throw err;
-          console.table(rows);
-          startServer();
-        })
-      })
-      
-    })
-  })
+          console.log(result);
+          db.query(
+            `INSERT INTO roles SET ?`,
+            {
+              title: response.title,
+              salary: response.salary,
+              department_id: result[0].id,
+            },
+            function (err, result) {
+              if (err) throw err;
+              viewRoles();
+              startServer();
+            }
+          );
+        });
+      });
+  });
 };
 
 const updateRole = () => {
-  inquirer.prompt([
-    {
-      name: 'id',
-      type: 'input',
-      message: 'which employee would you like to update?'
-    },
-    {
-      name: 'role',
-      type: 'input',
-      message: 'What is the employees new role?'
-    }
-  ])
-  .then(response =>{ 
-  let sqlUpdate = `UPDATE employee SET role_id = ? WHERE id = ?`;
-  db.query(sqlUpdate, [response.role, response.id], (err, rows) => {
-    if (err) throw err
-    console.table(rows);
-    startServer();
-  })
-  })
-}
+  inquirer
+    .prompt([
+      {
+        name: "id",
+        type: "input",
+        message: "which employee would you like to update?",
+      },
+      {
+        name: "role",
+        type: "input",
+        message: "What is the employees new role?",
+      },
+    ])
+    .then((response) => {
+      let sqlUpdate = `UPDATE employee SET role_id = ? WHERE id = ?`;
+      db.query(sqlUpdate, [response.role, response.id], (err, rows) => {
+        if (err) throw err;
+        viewEmps();
+        startServer();
+      });
+    });
+};
 
 const updateManager = () => {
-  inquirer.prompt([
-    {
-      name: 'id',
-      type: 'input',
-      message: "Which employee would you like to update?"
-    },
-    {
-      name: 'manager',
-      type: 'input',
-      message: "Who is this employees new manager?"
-    }
-  ])
-  .then(response => {
-    let sqlUpdate = `UPDATE employee SET manager_id = ? WHERE id = ?`;
-    db.query(sqlUpdate, [response.manager, response.id], (err, rows) => {
-      if (err) throw err;
-      console.table(rows);
-      startServer();
-    })
-  })
-}
-
+  inquirer
+    .prompt([
+      {
+        name: "id",
+        type: "input",
+        message: "Which employee would you like to update?",
+      },
+      {
+        name: "manager",
+        type: "input",
+        message: "Who is this employees new manager?",
+      },
+    ])
+    .then((response) => {
+      let sqlUpdate = `UPDATE employee SET manager_id = ? WHERE id = ?`;
+      db.query(sqlUpdate, [response.manager, response.id], (err, rows) => {
+        if (err) throw err;
+        viewEmps();
+        startServer();
+      });
+    });
+};
 
 //Default response for any other request (Not Found)
 app.use((req, res) => {
