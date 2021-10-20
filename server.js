@@ -1,4 +1,5 @@
 //import dependencies
+const { response } = require("express");
 const express = require("express");
 const inquirer = require("inquirer");
 const mysql = require("mysql");
@@ -50,7 +51,8 @@ function startServer() {
         "Add an employee",
         "Add a department",
         "Add a role",
-        "Update an employee",
+        "Update an employee's role",
+        "Update an employee's manager"
       ],
     })
     .then(function (response) {
@@ -79,8 +81,12 @@ function startServer() {
           addRole();
           break;
 
-        case "Update an employee":
-          updateEmp();
+        case "Update an employee's role":
+          updateRole();
+          break;
+
+        case "Update an employee's manager":
+          updateManager();
           break;
       }
     });
@@ -135,6 +141,7 @@ const managerQuery = () => {
 };
 
 const addEmp = () => {
+      
         inquirer.prompt([
           {
               name: 'fName',
@@ -165,7 +172,7 @@ const addEmp = () => {
           }
       ]).then((answer) => {
             db.query(
-              `INSERT INTO employee(first_name, last_name, role_id, manager_id) VALUES(?, ?, 
+              `INSERT INTO employee(first_name, last_name, role_id, manager_id) VALUES(?, ?, ?, ?)
               (SELECT id FROM roles WHERE title = ? ), 
               (SELECT id FROM (SELECT id FROM employee WHERE CONCAT(first_name," ",last_name) = ? ) AS tmptable))`, [answer.fName, answer.lName, answer.role, answer.manager]
           )
@@ -229,6 +236,52 @@ const addRole = () => {
         })
       })
       
+    })
+  })
+};
+
+const updateRole = () => {
+  inquirer.prompt([
+    {
+      name: 'id',
+      type: 'input',
+      message: 'which employee would you like to update?'
+    },
+    {
+      name: 'role',
+      type: 'input',
+      message: 'What is the employees new role?'
+    }
+  ])
+  .then(response =>{ 
+  let sqlUpdate = `UPDATE employee SET role_id = ? WHERE id = ?`;
+  db.query(sqlUpdate, [response.role, response.id], (err, result) => {
+    if (err) throw err
+    console.log(result);
+    startServer();
+  })
+  })
+}
+
+const updateManager = () => {
+  inquirer.prompt([
+    {
+      name: 'id',
+      type: 'input',
+      message: "Which employee would you like to update?"
+    },
+    {
+      name: 'manager',
+      type: 'input',
+      message: "Who is this employees new manager?"
+    }
+  ])
+  .then(response => {
+    let sqlUpdate = `UPDATE employee SET manager_id = ? WHERE id = ?`;
+    db.query(sqlUpdate, [response.manager, response.id], (err, result) => {
+      if (err) throw err;
+      console.log(result);
+      startServer();
     })
   })
 }
