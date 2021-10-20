@@ -32,7 +32,7 @@ const db = mysql.createConnection(
     // Your MySQL username,
     user: "root",
     // Your MySQL password
-    password: "12161985Cb$",
+    password: process.env.DB_PW,
     database: "store_employees",
   },
   console.log("Connected to the store_employees database.")
@@ -120,7 +120,7 @@ const viewRoles = () => {
 
 const rolesQuery = (callback) => {
   let sqlQuery = `SELECT * FROM roles`
-  db.query(sqlQuery,  function(err, results)  {
+  db.query(sqlQuery,  function(err, rows)  {
     if (err) throw err;
     let data = [];
     results.forEach(element => {
@@ -187,9 +187,9 @@ const addDept = () => {
       message: 'What is the name of the department?'
     }).then(function(response) {
       let sqlQuery = `INSERT INTO department SET ?`;
-      db.query(sqlQuery, { department_name: response.dept }, (err, res) => {
+      db.query(sqlQuery, { department_name: response.dept }, (err, rows) => {
         if (err) throw err;
-        console.log('department added');
+        console.table(rows);
       });
       startServer();
     });
@@ -197,7 +197,7 @@ const addDept = () => {
 
 const addRole = () => {
   let departArray = [];
-  db.query(`SELECT * FROM department`, function(err, results) {
+  db.query(`SELECT * FROM department`, function(err, rows) {
     if (err) throw err;
     results.forEach(element => {
       departArray.push(element.department_name)
@@ -232,6 +232,7 @@ const addRole = () => {
           department_id: result[0].id
         }, function (err, result) {
           if (err) throw err;
+          console.table(rows);
           startServer();
         })
       })
@@ -255,9 +256,9 @@ const updateRole = () => {
   ])
   .then(response =>{ 
   let sqlUpdate = `UPDATE employee SET role_id = ? WHERE id = ?`;
-  db.query(sqlUpdate, [response.role, response.id], (err, result) => {
+  db.query(sqlUpdate, [response.role, response.id], (err, rows) => {
     if (err) throw err
-    console.log(result);
+    console.table(rows);
     startServer();
   })
   })
@@ -278,9 +279,9 @@ const updateManager = () => {
   ])
   .then(response => {
     let sqlUpdate = `UPDATE employee SET manager_id = ? WHERE id = ?`;
-    db.query(sqlUpdate, [response.manager, response.id], (err, result) => {
+    db.query(sqlUpdate, [response.manager, response.id], (err, rows) => {
       if (err) throw err;
-      console.log(result);
+      console.table(rows);
       startServer();
     })
   })
