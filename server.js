@@ -1,9 +1,7 @@
 //import dependencies
-const { response } = require("express");
 const express = require("express");
 const inquirer = require("inquirer");
 const mysql = require("mysql");
-const { title } = require("process");
 //port designation
 const PORT = process.env.PORT || 3003;
 const app = express();
@@ -13,10 +11,6 @@ const empTable = `SELECT employee.id, employee.first_name, employee.last_name, r
       LEFT JOIN manager ON employee.manager_id = manager.id
       LEFT JOIN roles ON employee.role_id = roles.id 
       LEFT JOIN department ON employee.department_id = department.id`;
-
-const empQuery =
-  'SELECT CONCAT(e.first_name," ",e.last_name) AS full_name FROM employee AS e';
-
 
 // Express middleware
 app.use(express.urlencoded({ extended: false }));
@@ -126,61 +120,66 @@ const addEmp = () => {
         name: "lName",
         type: "input",
         message: "What is the employees last name",
-      }
+      },
     ])
-    .then(answer => {
-      const params = [answer.fName, answer.lName]
+    .then((answer) => {
+      const params = [answer.fName, answer.lName];
 
       const roleSql = `SELECT roles.id, roles.title FROM roles`;
       db.query(roleSql, (err, data) => {
         if (err) throw err;
         const role = data.map(({ id, title }) => ({ name: title, value: id }));
 
-        inquirer.prompt([
-          {
-            name: 'role',
-            type: 'list',
-            message: 'What is the employees role?',
-            choices: role
-          }
-        ])
-        .then(roleChoice => {
-          const role = roleChoice.role;
-          params.push(role);
+        inquirer
+          .prompt([
+            {
+              name: "role",
+              type: "list",
+              message: "What is the employees role?",
+              choices: role,
+            },
+          ])
+          .then((roleChoice) => {
+            const role = roleChoice.role;
+            params.push(role);
 
-          const managerSql = `SELECT * FROM manager`;
+            const managerSql = `SELECT * FROM manager`;
 
-          db.query(managerSql, (err, data) => {
-            if (err) throw err;
+            db.query(managerSql, (err, data) => {
+              if (err) throw err;
 
-            const managers = data.map(({ id, first_name, last_name }) => ({ name: first_name + " "+ last_name, value: id}));
+              const managers = data.map(({ id, first_name, last_name }) => ({
+                name: first_name + " " + last_name,
+                value: id,
+              }));
 
-            inquirer.prompt([
-              {
-                name: 'manager',
-                type: 'list',
-                message: 'Who is the employees manager?',
-                choices: managers
-              }
-            ])
-            .then(managerChoice => {
-              const manager = managerChoice.manager;
-              params.push(manager);
+              inquirer
+                .prompt([
+                  {
+                    name: "manager",
+                    type: "list",
+                    message: "Who is the employees manager?",
+                    choices: managers,
+                  },
+                ])
+                .then((managerChoice) => {
+                  const manager = managerChoice.manager;
+                  params.push(manager);
 
-              const sql = `INSERT INTO employee (first_name, last_name, role_id, manager_id)
+                  const sql = `INSERT INTO employee (first_name, last_name, role_id, manager_id)
               VALUES (?, ?, ?, ?)`;
 
-              db.query(sql, params, (err, result) => {
-                if (err) throw err;
-                console.log("Employee has been added");
+                  db.query(sql, params, (err, result) => {
+                    if (err) throw err;
+                    console.log("Employee has been added");
 
-                viewEmps();
-              })
-            })
-          })
-        })
-      })
-      
+                    viewEmps();
+                  });
+                });
+            });
+          });
+      });
+
       startServer();
     });
 };
@@ -204,7 +203,7 @@ const addDept = () => {
 
 const addRole = () => {
   let departArray = [];
-  db.query(`SELECT * FROM department`, function (err, rows) {
+  db.query(`SELECT * FROM department`, function (err, results) {
     if (err) throw err;
     results.forEach((element) => {
       departArray.push(element.department_name);
