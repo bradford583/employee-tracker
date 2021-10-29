@@ -2,6 +2,7 @@
 const express = require("express");
 const inquirer = require("inquirer");
 const mysql = require("mysql");
+const { start } = require("repl");
 //port designation
 const PORT = process.env.PORT || 3003;
 const app = express();
@@ -174,13 +175,12 @@ const addEmp = () => {
                     console.log("Employee has been added");
 
                     viewEmps();
+                    
                   });
                 });
             });
           });
       });
-
-      startServer();
     });
 };
 
@@ -196,8 +196,9 @@ const addDept = () => {
       db.query(sqlQuery, { department_name: response.dept }, (err, rows) => {
         if (err) throw err;
         viewDept();
+        
       });
-      startServer();
+      
     });
 };
 
@@ -243,10 +244,11 @@ const addRole = () => {
             function (err, result) {
               if (err) throw err;
               viewRoles();
-              startServer();
+              
             }
           );
         });
+        
       });
   });
 };
@@ -270,7 +272,7 @@ const updateRole = () => {
       db.query(sqlUpdate, [response.role, response.id], (err, rows) => {
         if (err) throw err;
         viewEmps();
-        startServer();
+        
       });
     });
 };
@@ -294,7 +296,7 @@ const updateManager = () => {
       db.query(sqlUpdate, [response.manager, response.id], (err, rows) => {
         if (err) throw err;
         viewEmps();
-        startServer();
+        
       });
     });
 };
